@@ -6,13 +6,12 @@ const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+// Isse Render khud hi aapke dashboard se values utha lega
 cloudinary.config({
-    cloud_name: 'dpow8ge6t', 
-    api_key: '134938482959328',
-    api_secret: '9D58xS50w3mO0n9PKPRcSBCR-YY' 
+    cloud_name: process.env.CLOUDINARY_NAME, 
+    api_key: process.env.CLOUDINARY_KEY,
+    api_secret: process.env.CLOUDINARY_SECRET
 });
-
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
