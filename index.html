@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Saii - Login & Sign Up</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 350px; text-align: center; }
+        input { width: 90%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; }
+        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .toggle { margin-top: 15px; cursor: pointer; color: #1a73e8; font-size: 14px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div id="loginBox">
+        <h2>Login</h2>
+        <input type="email" id="loginEmail" placeholder="Email Address">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button onclick="login()">Sign In</button>
+        <div class="toggle" onclick="toggleForm()">Naya Account Banayein</div>
+    </div>
+    <div id="signupBox" class="hidden">
+        <h2>Sign Up</h2>
+        <input type="text" id="signupName" placeholder="Full Name">
+        <input type="email" id="signupEmail" placeholder="Email Address">
+        <input type="password" id="signupPassword" placeholder="Password">
+        <button onclick="signUp()" style="background: #34a853;">Create Account</button>
+        <div class="toggle" onclick="toggleForm()">Pehle se account hai? Login</div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDrcb2lwXRtJ85KlsvY5-BavRc6tITyqTA",
+        authDomain: "saii-13582.firebaseapp.com",
+        projectId: "saii-13582",
+        storageBucket: "saii-13582.firebasestorage.app",
+        messagingSenderId: "831264433866",
+        appId: "1:831264433866:web:5ed6230a0cbcc38102b633"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.toggleForm = () => {
+        document.getElementById('loginBox').classList.toggle('hidden');
+        document.getElementById('signupBox').classList.toggle('hidden');
+    }
+
+    window.signUp = async () => {
+        const name = document.getElementById('signupName').value;
+        const email = document.getElementById('signupEmail').value;
+        const pass = document.getElementById('signupPassword').value;
+        if(!name || !email || !pass) return alert("Sari details bharein!");
+        try {
+            const res = await createUserWithEmailAndPassword(auth, email, pass);
+            await setDoc(doc(db, "users", res.user.uid), {
+                fullName: name, email: email, isApproved: false, role: "user"
+            });
+            alert("Registered! Admin approval ka wait karein.");
+            location.reload();
+        } catch (e) { alert(e.message); }
+    }
+
+    window.login = async () => {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPassword').value;
+        try {
+            const res = await signInWithEmailAndPassword(auth, email, pass);
+            const userDoc = await getDoc(doc(db, "users", res.user.uid));
+            const userData = userDoc.data();
+
+            if (userData.role === 'admin') {
+                window.location.href = `/auth-bridge?role=admin`;
+            } else if (userData.isApproved) {
+                window.location.href = "normal.html";
+            } else {
+                await signOut(auth);
+                alert("Account Approved nahi hai!");
+            }
+        } catch (e) { alert("Login failed! Check email/password."); }
+    }
+</script>
+</body>
+</html>

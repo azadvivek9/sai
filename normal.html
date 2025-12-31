@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 50px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        h1 { color: #2ecc71; margin-bottom: 10px; font-size: 24px; }
+        p { color: #64748b; margin-bottom: 25px; }
+        .btn-logout { background: #e74c3c; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn-logout:hover { background: #c0392b; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1 id="welcomeName">Hello!</h1>
+        <p>Aapka account approved hai aur aap login hain.</p>
+        <button class="btn-logout" id="logoutBtn">Log Out Karein</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDrcb2lwXRtJ85KlsvY5-BavRc6tITyqTA", 
+            authDomain: "saii-13582.firebaseapp.com", 
+            projectId: "saii-13582", 
+            storageBucket: "saii-13582.firebasestorage.app", 
+            messagingSenderId: "831264433866", 
+            appId: "1:831264433866:web:5ed6230a0cbcc38102b633" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Security: Check if user is logged in
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const uDoc = await getDoc(doc(db, "users", user.uid));
+                if (uDoc.exists() && uDoc.data().isApproved) {
+                    document.getElementById('welcomeName').innerText = "Hello, " + uDoc.data().fullName;
+                } else { 
+                    // Agar approved nahi hai toh nikal do
+                    await signOut(auth); 
+                    window.location.href = "index.html"; 
+                }
+            } else { 
+                // Agar login hi nahi hai toh login page par bhejo
+                window.location.href = "index.html"; 
+            }
+        });
+
+        // Logout Button Logic
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                console.log("User signed out.");
+                window.location.href = "index.html"; // Wapas login page par
+            } catch (error) {
+                alert("Logout mein error: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
