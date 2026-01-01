@@ -33,15 +33,12 @@ const upload = multer({ storage: storage });
 
 app.use(express.urlencoded({ extended: true }));
 
-// Admin Auth Middleware
 const isAdmin = (req, res, next) => {
     if (req.session.isAdmin) return next();
     res.redirect('/login-page');
 };
 
-// Serve HTML Files
 app.get('/login-page', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/normal.html', (req, res) => res.sendFile(path.join(__dirname, 'normal.html')));
 
 app.get('/auth-bridge', (req, res) => {
     if (req.query.role === 'admin') {
@@ -57,23 +54,26 @@ app.get('/logout', (req, res) => {
 
 const CSS = `<style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-    body { font-family: 'Inter', sans-serif; background: #f8fafc; margin: 0; padding: 20px; }
-    .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-    .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .btn { padding: 8px 14px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: 600; font-size: 12px; border:none; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s; }
+    body { font-family: 'Inter', sans-serif; background: #0a0a0c; color: #e2e8f0; margin: 0; padding: 0; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 50px; background: #121214; border-bottom: 1px solid #2d2d30; }
+    .logo { font-size: 1.5rem; font-weight: bold; color: #a855f7; }
+    .logo span { color: white; }
+    .twodiv { display: flex; min-height: 100vh; }
+    .sidebar { width: 250px; background: #0d0d0f; border-right: 1px solid #2d2d30; padding: 20px; }
+    .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 15px; color: white; text-decoration: none; border-radius: 8px; transition: 0.3s; margin-bottom: 5px; }
+    .sidebar-link:hover { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+    .main-content { flex: 1; padding: 30px; }
+    .container { background: #121214; padding: 30px; border-radius: 15px; border: 1px solid #2d2d30; }
+    .btn { padding: 8px 15px; border-radius: 6px; cursor: pointer; text-decoration: none; font-weight: 600; border: none; display: inline-flex; align-items: center; gap: 5px; }
     .btn-success { background: #10b981; color: white; }
-    .btn-download { background: #6366f1; color: white; }
-    .btn-danger { background: #fee2e2; color: #ef4444; }
-    .btn-logout { background: #334155; color: white; }
-    .btn-primary { background: #4f46e5; color: white; width: 100%; margin-top: 10px; height: 45px; font-size: 15px; }
-    .upload-box { border: 2px dashed #4f46e5; padding: 40px; text-align: center; border-radius: 12px; background: #f8faff; cursor: pointer; margin-bottom: 20px; transition: 0.3s; }
-    .upload-box.dragover { background: #e0e7ff; border-color: #10b981; }
-    .search-box { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 20px; outline: none; box-sizing: border-box; }
-    .table-wrapper { max-height: 500px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; }
-    table { width: 100%; border-collapse: collapse; }
-    th { position: sticky; top: 0; background: #f1f5f9; padding: 15px; text-align: left; }
-    td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-    .preview { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; }
+    .btn-download { background: #a855f7; color: white; }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+    .btn-logout { background: #ef4444; color: white; }
+    .upload-box { border: 2px dashed #a855f7; padding: 30px; text-align: center; border-radius: 12px; cursor: pointer; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { text-align: left; color: #a855f7; padding: 12px; border-bottom: 1px solid #2d2d30; }
+    td { padding: 12px; border-bottom: 1px solid #1a1a1c; font-size: 14px; }
+    .preview { width: 40px; height: 40px; border-radius: 5px; object-fit: cover; }
     #fileInput { display: none; }
 </style>`;
 
@@ -81,50 +81,89 @@ app.get('/', isAdmin, async (req, res) => {
     try {
         const result = await cloudinary.api.resources({ type: 'upload', prefix: 'my_cloud_uploads/', max_results: 100 });
         const files = result.resources.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        // Is line ko niche res.send me use kiya hai
+        const fontAwesome = `<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">`;
 
         let rows = files.map(f => {
             const downloadUrl = f.secure_url.replace('/upload/', '/upload/fl_attachment/');
             const preview = f.format === 'pdf' ? 'https://cdn-icons-png.flaticon.com/512/337/337946.png' : f.secure_url;
             return `<tr class="file-row">
-                <td><img src="${preview}" class="preview" onerror="this.src='https://cdn-icons-png.flaticon.com/512/124/124837.png'"></td>
+                <td><img src="${preview}" class="preview"></td>
                 <td class="file-name"><b>${f.public_id.split('/').pop()}.${f.format}</b></td>
                 <td>${new Date(f.created_at).toLocaleDateString()}</td>
                 <td>
                     <div style="display:flex; gap:8px;">
-                        <a href="${f.secure_url}" target="_blank" class="btn btn-success">View</a>
-                        <a href="${downloadUrl}" class="btn btn-download">Download</a>
-                        <a href="/delete/${encodeURIComponent(f.public_id)}" class="btn btn-danger" onclick="return confirm('Delete?')">Delete</a>
+                        <a href="${f.secure_url}" target="_blank" class="btn btn-success"><i class="fa-solid fa-eye"></i> View</a>
+                        <a href="${downloadUrl}" class="btn btn-download"><i class="fa-solid fa-download"></i>Download</a>
+                        <a href="/delete/${encodeURIComponent(f.public_id)}" class="btn btn-danger" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i>Delete</a>
                     </div>
                 </td>
             </tr>`;
         }).join('');
 
-        res.send(`${CSS}
-        <div class="container">
-            <div class="nav-header"><h2>Admin Dashboard</h2><a href="/logout" class="btn btn-logout">Logout</a></div>
-            <form action="/upload" method="POST" enctype="multipart/form-data">
-                <div class="upload-box" id="dropZone"><p id="msg">Drag & Drop or Click to Upload</p><input type="file" name="file" id="fileInput"></div>
-                <button type="submit" id="submitBtn" class="btn btn-primary" style="display:none;">Upload Start</button>
-            </form>
-            <input type="text" id="search" class="search-box" placeholder="Search files..." onkeyup="filterFiles()">
-            <div class="table-wrapper"><table><thead><tr><th>Type</th><th>Name</th><th>Date</th><th>Actions</th></tr></thead><tbody id="fileTable">${rows}</tbody></table></div>
-        </div>
-        <script>
-            const dz = document.getElementById('dropZone');
-            const fi = document.getElementById('fileInput');
-            dz.onclick = () => fi.click();
-            dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('dragover'); };
-            dz.ondragleave = () => dz.classList.remove('dragover');
-            dz.ondrop = (e) => { e.preventDefault(); fi.files = e.dataTransfer.files; update(fi.files[0].name); };
-            fi.onchange = () => update(fi.files[0].name);
-            function update(n) { document.getElementById('msg').innerText = "Selected: " + n; document.getElementById('submitBtn').style.display = "block"; }
-            function filterFiles() {
-                let v = document.getElementById('search').value.toLowerCase();
-                document.querySelectorAll('.file-row').forEach(r => {
-                    r.style.display = r.querySelector('.file-name').innerText.toLowerCase().includes(v) ? "" : "none";
-                });
-            }
-        </script>`);
+        // Yahan maine ${fontAwesome} include kar diya hai
+        res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            ${fontAwesome}
+            ${CSS}
+        </head>
+        <body>
+            <nav>
+                <div class="logo">WEB_ <span>SAI</span></div>
+                <a href="/logout" class="btn btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </nav>
+
+            <div class="twodiv">
+                <aside class="sidebar">
+                    <a href="#" class="sidebar-link"><i class="fa-solid fa-folder-tree"></i> File Manager</a>
+                    <a href="#" class="sidebar-link"><i class="fa-solid fa-users-gear"></i> User Manager</a>
+                </aside>
+
+                <main class="main-content">
+                    <div class="container">
+                        <h2>Admin Dashboard</h2>
+                        <form action="/upload" method="POST" enctype="multipart/form-data">
+                            <div class="upload-box" id="dropZone">
+                                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: #a855f7;"></i>
+                                <p id="msg">Click or Drag to Upload File</p>
+                                <input type="file" name="file" id="fileInput">
+                            </div>
+                            <button type="submit" id="submitBtn" class="btn btn-download" style="margin-bottom: 20px; display:none; width: 100%; height: 45px; justify-content: center;">Start Upload</button>
+                        </form>
+
+                        <input type="text" id="search" style="width:100%; padding:10px; background:#1a1a1c; border:1px solid #2d2d30; color:white; border-radius:8px; margin-bottom:15px;" placeholder="Search files..." onkeyup="filterFiles()">
+
+                        <table>
+                            <thead>
+                                <tr><th>Icon</th><th>Name</th><th>Date</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody id="fileTable">${rows}</tbody>
+                        </table>
+                    </div>
+                </main>
+            </div>
+
+            <script>
+                const dz = document.getElementById('dropZone');
+                const fi = document.getElementById('fileInput');
+                dz.onclick = () => fi.click();
+                fi.onchange = () => {
+                    document.getElementById('msg').innerText = "Selected: " + fi.files[0].name;
+                    document.getElementById('submitBtn').style.display = "flex";
+                };
+
+                function filterFiles() {
+                    let v = document.getElementById('search').value.toLowerCase();
+                    document.querySelectorAll('.file-row').forEach(r => {
+                        r.style.display = r.querySelector('.file-name').innerText.toLowerCase().includes(v) ? "" : "none";
+                    });
+                }
+            </script>
+        </body>
+        </html>`);
     } catch (e) { res.send(e.message); }
 });
 
